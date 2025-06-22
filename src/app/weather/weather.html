@@ -1,0 +1,18 @@
+<h2>Cek Cuaca 🌤️</h2>
+
+<input [(ngModel)]="city" placeholder="Masukkan nama kota..." />
+<button (click)="searchWeather()">Cari</button>
+
+<p *ngIf="errorMessage" style="color: red">{{ errorMessage }}</p>
+
+<div *ngIf="weatherData">
+  <h3>{{ weatherData.name }}, {{ weatherData.sys.country }}</h3>
+  <p>Suhu: {{ weatherData.main.temp }}°C</p>
+  <p>Cuaca: {{ weatherData.weather[0].description }}</p>
+  <img
+    [src]="'https://openweathermap.org/img/wn/' + weatherData.weather[0].icon + '.png'"
+    alt="icon cuaca"
+  />
+  <p>Kelembapan: {{ weatherData.main.humidity }}%</p>
+  <p>Angin: {{ weatherData.wind.speed }} m/s</p>
+</div>
