@@ -1,18 +1,30 @@
-<h2>Cek Cuaca 🌤️</h2>
+<div class="flex h-screen">
+  <!-- Sidebar -->
+  <aside class="w-64 bg-gray-800 text-white p-4 flex flex-col">
+    <h1 class="text-2xl font-bold mb-4">WeatherMap</h1>
+    <div class="mb-4">
+      <input
+        [(ngModel)]="city"
+        placeholder="Search city..."
+        class="w-full px-3 py-2 rounded focus:outline-none text-gray-800"
+      />
+      <button
+        (click)="searchWeather()"
+        class="mt-2 w-full bg-blue-500 hover:bg-blue-600 transition rounded py-2"
+      >
+        Cari
+      </button>
+    </div>
+    <p *ngIf="errorMessage" class="text-red-400">{{ errorMessage }}</p>
+    <p *ngIf="isLoading" class="text-yellow-300">🔄 Loading...</p>
+    <h2 class="mt-4 font-semibold">Riwayat:</h2>
+    <ul class="flex-1 overflow-auto">
+      <li *ngFor="let h of history" class="py-1 border-b border-gray-700">
+        {{ h }}
+      </li>
+    </ul>
+  </aside>
 
-<input [(ngModel)]="city" placeholder="Masukkan nama kota..." />
-<button (click)="searchWeather()">Cari</button>
-
-<p *ngIf="errorMessage" style="color: red">{{ errorMessage }}</p>
-
-<div *ngIf="weatherData">
-  <h3>{{ weatherData.name }}, {{ weatherData.sys.country }}</h3>
-  <p>Suhu: {{ weatherData.main.temp }}°C</p>
-  <p>Cuaca: {{ weatherData.weather[0].description }}</p>
-  <img
-    [src]="'https://openweathermap.org/img/wn/' + weatherData.weather[0].icon + '.png'"
-    alt="icon cuaca"
-  />
-  <p>Kelembapan: {{ weatherData.main.humidity }}%</p>
-  <p>Angin: {{ weatherData.wind.speed }} m/s</p>
+  <!-- Map container -->
+  <div id="map" class="flex-1"></div>
 </div>
