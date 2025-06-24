@@ -20,6 +20,16 @@ export class WeatherComponent implements AfterViewInit {
   history: string[] = [];
   map!: L.Map;
   marker?: L.Marker;
+  filterWeather: { [key: string]: boolean } = {
+    Rain: false,
+    Clear: false,
+    Clouds: false,
+    Drizzle: false,
+    Thunderstorm: false,
+  };
+  allCityMarkers: L.Marker[] = [];
+
+  isSidebarOpen = false;
 
   constructor(private api: ApiService) {}
 
@@ -29,10 +39,15 @@ export class WeatherComponent implements AfterViewInit {
   }
 
   private initMap() {
-    this.map = L.map('map', { zoomControl: false }).setView([-6.2, 106.8], 5);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors',
-    }).addTo(this.map);
+    this.map = L.map('map', { zoomControl: false }).setView([-2.2, 117.8], 5);
+    L.tileLayer(
+      'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+      {
+        attribution: '&copy; <a href="https://carto.com/">CartoDB</a>',
+        subdomains: 'abcd',
+        maxZoom: 19,
+      }
+    ).addTo(this.map);
   }
 
   loadMultipleCitiesWeather() {
@@ -52,13 +67,33 @@ export class WeatherComponent implements AfterViewInit {
       { name: 'Manado', lat: 1.4931, lon: 124.8413 },
       { name: 'Jayapura', lat: -2.5333, lon: 140.7167 },
       { name: 'Yogyakarta', lat: -7.8014, lon: 110.3644 },
+      { name: 'Malang', lat: -7.9833, lon: 112.6167 },
+      { name: 'Tangerang', lat: -6.1781, lon: 106.63 },
+      { name: 'Bekasi', lat: -6.2349, lon: 106.9925 },
+      { name: 'Bogor', lat: -6.595, lon: 106.8166 },
+      { name: 'Pekanbaru', lat: 0.5333, lon: 101.45 },
+      { name: 'Batam', lat: 1.0667, lon: 104.0167 },
+      { name: 'Bandar Lampung', lat: -5.45, lon: 105.2667 },
+      { name: 'Samarinda', lat: -0.5, lon: 117.15 },
+      { name: 'Mataram', lat: -8.5833, lon: 116.1167 },
+      { name: 'Bengkulu', lat: -3.7956, lon: 102.2592 },
+      { name: 'Jambi', lat: -1.59, lon: 103.61 },
+      { name: 'Serang', lat: -6.12, lon: 106.1503 },
+      { name: 'Kupang', lat: -10.1667, lon: 123.5833 },
+      { name: 'Palu', lat: -0.895, lon: 119.8592 },
     ];
+
+    this.allCityMarkers.forEach((m) => this.map.removeLayer(m));
+    this.allCityMarkers = [];
 
     cities.forEach((city) => {
       this.api.getWeatherByCoord(city.lat, city.lon).subscribe({
         next: (data: WeatherResponse) => {
-          const icon = data.weather[0].icon;
-          const description = data.weather[0].description;
+          const { icon, description } = data.weather[0];
+          const { temp, temp_min, temp_max, pressure, humidity } = data.main;
+          const windSpeed = data.wind.speed;
+          const main = data.weather[0].main;
+
           const marker = L.marker([city.lat, city.lon], {
             icon: L.icon({
               iconUrl: `https://openweathermap.org/img/wn/${icon}.png`,
@@ -69,8 +104,17 @@ export class WeatherComponent implements AfterViewInit {
           }).addTo(this.map);
 
           marker.bindPopup(
-            `<b>${city.name}</b><br>${description}<br>Suhu: ${data.main.temp}°C`
+            `<b>${city.name}</b><br/>
+          ${description}<br/>
+          🌡️ Suhu: ${temp}°C<br/>
+          🔻 Min: ${temp_min}°C, 🔺 Max: ${temp_max}°C<br/>
+          💧 Kelembapan: ${humidity}%<br/>
+          📏 Tekanan: ${pressure} hPa<br/>
+          🌬️ Angin: ${windSpeed} m/s`
           );
+          (marker as any).weatherType = main;
+          marker.addTo(this.map);
+          this.allCityMarkers.push(marker);
         },
         error: (err) => {
           console.error('Gagal memuat cuaca untuk', city.name);
@@ -85,38 +129,50 @@ export class WeatherComponent implements AfterViewInit {
       this.weatherData = null;
       return;
     }
+
     this.isLoading = true;
+
     this.api.getWeatherByCity(this.city.trim()).subscribe({
-      next: (data) => {
+      next: (data: WeatherResponse) => {
         this.weatherData = data;
         this.errorMessage = '';
         this.isLoading = false;
         this.history.unshift(this.city);
 
         const { lat, lon } = data.coord;
-        const desc = data.weather[0].description;
-        const iconCode = data.weather[0].icon;
+        const { icon, description } = data.weather[0];
+        const { temp, temp_min, temp_max, pressure } = data.main;
+        const humidity = data.main.humidity;
+        const windSpeed = data.wind.speed;
 
-        // pindah view
+        // Update map view
         this.map.setView([lat, lon], 8);
 
-        // hapus marker lama
+        // Hapus marker lama
         if (this.marker) {
           this.map.removeLayer(this.marker);
         }
 
-        // custom icon cuaca
+        // Buat icon cuaca custom
         const weatherIcon = L.icon({
-          iconUrl: `https://openweathermap.org/img/wn/${iconCode}@2x.png`,
+          iconUrl: `https://openweathermap.org/img/wn/${icon}@2x.png`,
           iconSize: [50, 50],
           iconAnchor: [25, 50],
           popupAnchor: [0, -50],
         });
 
-        // tambahkan marker baru
+        // Tambahkan marker dengan info popup lengkap
         this.marker = L.marker([lat, lon], { icon: weatherIcon })
           .addTo(this.map)
-          .bindPopup(`<b>${this.city}</b><br/>${desc}`)
+          .bindPopup(
+            `<b>${this.city}</b><br/>
+          ${description}<br/>
+          🌡️ Suhu: ${temp}°C<br/>
+          🔻 Min: ${temp_min}°C, 🔺 Max: ${temp_max}°C<br/>
+          💧 Kelembapan: ${humidity}%<br/>
+          📏 Tekanan: ${pressure} hPa<br/>
+          🌬️ Angin: ${windSpeed} m/s`
+          )
           .openPopup();
       },
       error: () => {
@@ -124,6 +180,20 @@ export class WeatherComponent implements AfterViewInit {
         this.weatherData = null;
         this.isLoading = false;
       },
+    });
+  }
+  applyWeatherFilter() {
+    const selectedTypes = Object.keys(this.filterWeather).filter(
+      (type) => this.filterWeather[type]
+    );
+
+    this.allCityMarkers.forEach((marker) => {
+      const markerWeather = (marker as any).weatherType;
+      if (selectedTypes.length === 0 || selectedTypes.includes(markerWeather)) {
+        marker.addTo(this.map); // tampilkan
+      } else {
+        this.map.removeLayer(marker); // sembunyikan
+      }
     });
   }
 }
