@@ -190,10 +190,73 @@ export class WeatherComponent implements AfterViewInit {
     this.allCityMarkers.forEach((marker) => {
       const markerWeather = (marker as any).weatherType;
       if (selectedTypes.length === 0 || selectedTypes.includes(markerWeather)) {
-        marker.addTo(this.map); // tampilkan
+        marker.addTo(this.map);
       } else {
-        this.map.removeLayer(marker); // sembunyikan
+        this.map.removeLayer(marker);
       }
     });
+  }
+
+  getMyLocationWeather() {
+    if (!navigator.geolocation) {
+      this.errorMessage = 'Geolocation tidak didukung di browser ini.';
+      return;
+    }
+
+    this.isLoading = true;
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+
+        this.api.getWeatherByCoord(lat, lon).subscribe({
+          next: (data: WeatherResponse) => {
+            this.weatherData = data;
+            this.errorMessage = '';
+            this.isLoading = false;
+            const { icon, description } = data.weather[0];
+            const { temp, temp_min, temp_max, pressure, humidity } = data.main;
+            const windSpeed = data.wind.speed;
+
+            // geser peta
+            this.map.setView([lat, lon], 10);
+
+            // hapus marker sebelumnya jika ada
+            if (this.marker) {
+              this.map.removeLayer(this.marker);
+            }
+
+            // buat marker baru
+            const weatherIcon = L.icon({
+              iconUrl: `https://openweathermap.org/img/wn/${icon}@2x.png`,
+              iconSize: [50, 50],
+              iconAnchor: [25, 50],
+              popupAnchor: [0, -50],
+            });
+
+            this.marker = L.marker([lat, lon], { icon: weatherIcon })
+              .addTo(this.map)
+              .bindPopup(
+                `<b>Lokasi Saya</b><br/>
+              ${description}<br/>
+              🌡️ Suhu: ${temp}°C<br/>
+              🔻 Min: ${temp_min}°C, 🔺 Max: ${temp_max}°C<br/>
+              💧 Kelembapan: ${humidity}%<br/>
+              📏 Tekanan: ${pressure} hPa<br/>
+              🌬️ Angin: ${windSpeed} m/s`
+              )
+              .openPopup();
+          },
+          error: () => {
+            this.errorMessage = 'Gagal mendapatkan data cuaca lokasi Anda.';
+            this.isLoading = false;
+          },
+        });
+      },
+      (error) => {
+        this.errorMessage = 'Izin lokasi ditolak atau terjadi kesalahan.';
+        this.isLoading = false;
+      }
+    );
   }
 }
