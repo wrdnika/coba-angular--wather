@@ -3,12 +3,13 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from './api';
 import { WeatherResponse } from './weather.model';
+import { GlobeViewComponent } from '../globe-view/globe-view';
 import * as L from 'leaflet';
 
 @Component({
   selector: 'app-weather',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, GlobeViewComponent],
   templateUrl: './weather.html',
   styleUrls: ['./weather.css'],
 })
@@ -28,8 +29,9 @@ export class WeatherComponent implements AfterViewInit {
     Thunderstorm: false,
   };
   allCityMarkers: L.Marker[] = [];
-
+  isGlobeVisible: boolean = false;
   isSidebarOpen = false;
+  globeCities: any[] = [];
 
   constructor(private api: ApiService) {}
 
@@ -48,6 +50,7 @@ export class WeatherComponent implements AfterViewInit {
         maxZoom: 19,
       }
     ).addTo(this.map);
+    this.globeCities = [];
   }
 
   loadMultipleCitiesWeather() {
@@ -115,6 +118,12 @@ export class WeatherComponent implements AfterViewInit {
           (marker as any).weatherType = main;
           marker.addTo(this.map);
           this.allCityMarkers.push(marker);
+          this.globeCities.push({
+            name: city.name,
+            lat: city.lat,
+            lon: city.lon,
+            weather: main,
+          });
         },
         error: (err) => {
           console.error('Gagal memuat cuaca untuk', city.name);

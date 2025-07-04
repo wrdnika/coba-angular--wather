@@ -259,8 +259,19 @@
     (click)="isSidebarOpen = false"
   ></div>
 
-  <!-- Map -->
-  <div id="map" class="flex-1 w-full h-96 md:h-full z-0"></div>
+  <!-- Map / Globe Toggle -->
+  <div class="flex-1 w-full h-96 md:h-full z-0 relative">
+    <div
+      id="map"
+      class="absolute inset-0"
+      [class.hidden]="isGlobeVisible"
+    ></div>
+    <app-globe-view
+      *ngIf="isGlobeVisible"
+      [cities]="globeCities"
+      class="absolute inset-0 z-0"
+    ></app-globe-view>
+  </div>
   <!-- Tombol lokasi saat ini -->
   <button
     (click)="getMyLocationWeather()"
@@ -286,5 +297,14 @@
         d="M12 22s8-4.5 8-12a8 8 0 10-16 0c0 7.5 8 12 8 12z"
       />
     </svg>
+  </button>
+
+  <!-- Tombol globe 3D -->
+  <button
+    (click)="isGlobeVisible = !isGlobeVisible"
+    class="fixed bottom-20 right-4 backdrop-blur-md bg-white/10 border border-white/30 hover:bg-white/20 transition text-white w-14 h-14 rounded-full shadow-xl flex items-center justify-center z-50"
+    title="Mode Globe 3D"
+  >
+    3D
   </button>
 </div>
